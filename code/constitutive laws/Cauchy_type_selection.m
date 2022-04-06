@@ -21,7 +21,9 @@ switch matyp
     case 8
          Cauchy = stress8(kinematics,properties,dim);  
     case 9
-         Cauchy = stress9(kinematics,properties,cons);         
+         Cauchy = stress9(kinematics,properties,cons);     
+    case 10
+         Cauchy = stress10(kinematics,properties,cons); 
     case 17
          %-----------------------------------------------------------------
          % Select internal variables at a particular Gauss point (igauss)
