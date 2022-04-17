@@ -1,0 +1,112 @@
+%--------------------------------------------------------------------------
+% Evaluates the constitutive tensor (in Voigt notation) for material type 1.
+%--------------------------------------------------------------------------
+function c = ctens10(kinematics,properties,cons)
+mu1         = properties(2);
+mu2         = properties(3);
+k           = properties(4);
+J           = kinematics.J;
+
+C = kinematics.F' * kinematics.F;
+C_bar = J^(-2/3) * C;
+I1 = trace(C);
+I1_bar = J^(-2/3) * I1;
+I2 = 1/2 * (I1^2 - trace(C^2));
+I2_bar = J^(-4/3) * I2;
+
+% term1 in eq(17b): inv(C_bar) dyadic inv(C_bar)
+inv_Cbar = inv(C_bar);
+dimension = size(inv_Cbar,1);
+term1 =  zeros(dimension,dimension,dimension,dimension);
+
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = dimension
+                term1(i,j,k,l) = term1(i,j,k,l) + inv_Cbar(i,j)*inv_Cbar(k,l);
+            end
+        end
+    end
+end
+
+% term2 in eq(17b): derivative of inv(C_bar) with respect to itself
+term2 =  zeros(dimension,dimension,dimension,dimension);
+
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = 1:dimension
+                term2(i,j,k,l) = term2(i,j,k,l) + inv_Cbar(i,k)*inv_Cbar(l,j);
+            end
+        end
+    end
+end
+
+% term3 in eq(25): inv(C_bar) dyadic C_bar vice versa.
+term3 =  zeros(dimension,dimension,dimension,dimension);
+
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = 1:dimension
+                term3(i,j,k,l) = term3(i,j,k,l) + inv_Cbar(i,j)*C_bar(k,l) + C_bar(i,j)*inv_Cbar(k,l);
+            end
+        end
+    end
+end
+
+% term4 in eq(25): inv(C_bar) dyadic identity
+term4 =  zeros(dimension,dimension,dimension,dimension);
+
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = 1:dimension
+                term4(i,j,k,l) = term4(i,j,k,l) + inv_Cbar(i,j)*cons.I(k,l) + cons.I(i,j)*inv_Cbar(k,l);
+            end
+        end
+    end
+end
+
+% 4th order identity tensor
+for i = 1:dimension
+    for j = 1:dimension
+        identity4 = shiftdim( repmat(eye(3,3),1,1,dimension,dimension),2);
+    end
+end
+
+c_vol = J^(-1/3)*(2*J-1)*k*term1 - 2*J^(-1/3)*(J-1)*k*term2;
+c_iso = 2*J^(-4/3)*mu2*(cons.IDENTITY_TENSORS.c1 - identity4)...
+        - 2/3*J^(-4/3)*(mu1+2*mu2*I1_bar)*(term4)...
+        + 4/3*J^(-4/3)*mu2*(term3)...
+        + 2/9*J^(-4/3)*(mu1*I1_bar + 4*mu2*I2_bar)*(term1)...
+        +2/3*J^(-4/3)*(mu1*I1_bar + 2*mu2*I2_bar)*(term2);
+c = c_vol + c_iso;
+
+B_bar = C_bar';
+CONSTANT.I = eye(dimension); 
+
+term1 =  zeros(dimension,dimension,dimension,dimension);
+term2 =  zeros(dimension,dimension,dimension,dimension);
+term3 =  zeros(dimension,dimension,dimension,dimension);
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = 1:dimension
+                term1(i,j,k,l) = term1(i,j,k,l) + B_bar(i,j)*B_bar(k,l)...
+                                 - 1/2*(B_bar(i,k)*B_bar(j,l) + B_bar(i,l)*B_bar(j,k));
+                term2(i,j,k,l) = term2(i,j,k,l) + (B_bar(i,j)*CONSTANT.I(k,l) + B_bar(k,l)*CONSTANT.I(i,j));
+                term3(i,j,k,l) = term3(i,j,k,l) + (B_bar(i,j)^2*CONSTANT.I(k,l) + B_bar(k,l)^2*CONSTANT.I(i,j));
+            end
+        end
+    end
+end
+
+c_vol_ = k*J*(2*J-1)*cons.IDENTITY_TENSORS.c1 - k*J*(J-1)*cons.IDENTITY_TENSORS.c1;
+c_iso_ = 2*mu2*(term1)...
+         -2/3*(mu1+2*mu2*I1_bar)*(term2)...
+         +4/3*mu2*(term3) + 2/9*(mu1*I1_bar + 4*mu2*I2_bar)*cons.IDENTITY_TENSORS.c1...
+         +1/3*(mu1*I1_bar + 2*mu2*I2_bar)*cons.IDENTITY_TENSORS.c2;
+end
+
+

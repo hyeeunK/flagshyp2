@@ -44,6 +44,8 @@ function  property_numbers    = material_choice(matyp)
              property_numbers = (1:4);
         case 17
              property_numbers = (1:5);
+        case 10 % Mooney-Rivlin
+             property_numbers = (1:4);
         otherwise
              property_numbers = (1:3);
     end

@@ -3,10 +3,9 @@
 %--------------------------------------------------------------------------
 function c = ctens10(kinematics,properties,cons)
 mu1         = properties(2);
-mu2         = properties(2);
-lambda     = properties(3);
-k = lambda + 2*mu1/3;
-J          = kinematics.J;
+mu2         = properties(3);
+k           = properties(4);
+J           = kinematics.J;
 
 C = kinematics.F' * kinematics.F;
 C_bar = J^(-2/3) * C;
@@ -15,19 +14,35 @@ I1_bar = J^(-2/3) * I1;
 I2 = 1/2 * (I1^2 - trace(C^2));
 I2_bar = J^(-4/3) * I2;
 
-p = cons.I - 1/3 * C_bar^(-1)*C_bar^(-1)';
-p_tilde = k * (2*J -1);
-S_bar = (mu1 + mu2*I1_bar)*cons.I - mu2*C_bar;
+dimension = size(C_bar,1);
 
-% compute pk2
-S_vol = J^(1/3) * (J-1) * k * C_bar^(-1);
-S_iso = J^(-2/3) * (-1/3*(mu1*I1_bar + 2*mu2*I2_bar)*C_bar^(-1) + (mu1 + mu2*I1_bar)*cons.I - mu2*C_bar);
-S = S_vol + S_iso;
+B_bar = C_bar';
+CONSTANT.I = eye(dimension); 
 
-c_vol = J^(-1/3)*(2*J-1)*k*C_bar^(-1)*C_bar^(-1)' - 2*J^(-1/3)*(J-1)*k*C_bar;
-c_iso = p*C_bar*p' + 2/3*trace(J^(-2/3)*S_bar)*p_tilde -2/3*J^(-2/3)*(C_bar^(-1)*S_iso' + S_iso*C_bar^(-1)');
+term1 =  zeros(dimension,dimension,dimension,dimension);
+term2 =  zeros(dimension,dimension,dimension,dimension);
+term3 =  zeros(dimension,dimension,dimension,dimension);
+
+for i = 1:dimension
+    for j = 1:dimension
+        for k = 1:dimension
+            for l = 1:dimension
+                term1(i,j,k,l) = term1(i,j,k,l) + B_bar(i,j)*B_bar(k,l)...
+                                 - 1/2*(B_bar(i,k)*B_bar(j,l) + B_bar(i,l)*B_bar(j,k));
+                term2(i,j,k,l) = term2(i,j,k,l) + (B_bar(i,j)*CONSTANT.I(k,l) + B_bar(k,l)*CONSTANT.I(i,j));
+                term3(i,j,k,l) = term3(i,j,k,l) + (B_bar(i,j)^2*CONSTANT.I(k,l) + B_bar(k,l)^2*CONSTANT.I(i,j));
+            end
+        end
+    end
+end
+
+c_vol = k*J*(2*J-1)*cons.IDENTITY_TENSORS.c1 - k*J*(J-1)*cons.IDENTITY_TENSORS.c1; % Eq.(A.5c)
+c_iso = 2*mu2*(term1)...
+        -2/3*(mu1+2*mu2*I1_bar)*(term2)...
+        +4/3*mu2*(term3) + 2/9*(mu1*I1_bar + 4*mu2*I2_bar)*cons.IDENTITY_TENSORS.c1...
+        +1/3*(mu1*I1_bar + 2*mu2*I2_bar)*cons.IDENTITY_TENSORS.c2;      % Eq.(A.7)
+
 c = c_vol + c_iso;
-
 end
 
 

@@ -6,7 +6,7 @@ CONSTANT.I = eye(dimension);
 %--------------------------------------------------------------------------                                                             
 % Indicial components of fourth order isotropic tensors 
 % c1 = delta(i,j)*delta(k,l)
-% c2 = delta(i,k)*delta(j,l) + delta(i,l)*delta(j,k) 
+% c2 = delta(i,k)*delta(j,l) + delta(i,l)*del ta(j,k) 
 % (see textbook example 2.8)
 %--------------------------------------------------------------------------                                                             
 c1 =  zeros(dimension,dimension,dimension,dimension);
